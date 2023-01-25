@@ -1,0 +1,8 @@
+node_modules
+cdk.out
+node_modules/
+cdk.out/
+package-lock.json
+*.js
+LinuxServerBuild/*GameLiftExampleServer*
+
