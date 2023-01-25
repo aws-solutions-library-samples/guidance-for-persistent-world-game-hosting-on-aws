@@ -1,6 +1,5 @@
 # Hosting Persistent Worlds on AWS
 
-- [Hosting Persistent Worlds on AWS](#hosting-persistent-worlds-on-aws)
 - [Key Features](#key-features)
 - [Considerations](#considerations)
 - [Contents](#contents)
