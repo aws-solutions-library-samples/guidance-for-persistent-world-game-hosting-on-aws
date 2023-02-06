@@ -12,11 +12,13 @@ const app = new cdk.App();
 
 const fleetRoleStack = new PersistentWorldFleetRoleStack(app, 'PersistentWorldFleetRoleStack', {
   env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: deploymentRegion },
+  description : "Guidance for Infrastructure for Persistent World Games (SO9157)"
 });
 
 const backendStack = new PersistentWorldGameliftStack(app, 'PersistentWorldGameliftStack', {
   env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: deploymentRegion },
-  gameliftFleetRole: fleetRoleStack.fleetRole
+  gameliftFleetRole: fleetRoleStack.fleetRole,
+  description : "Guidance for Infrastructure for Persistent World Games (SO9157)"
 });
 
 /* CDK Nag, enable as needed
