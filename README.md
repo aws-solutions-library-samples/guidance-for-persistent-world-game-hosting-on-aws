@@ -17,6 +17,7 @@
   * [Game Server and Game Client](#game-server-and-game-client)
     + [Game Server Refresh](#game-server-refresh)
   * [Local Testing](#local-testing)
+- [Resource clean up](#resource-clean-up)
 - [License](#license)
 
 This repository contains a solution for hosting persistent world games and virtual worlds on AWS leveraging Amazon GameLift, a fully managed game server hosting solution, with a serverless backend service and management layer. The solution is designed for getting quickly started with persistent virtual world game or application development on MacOS and Windows. It includes infrastructure as code automation, as well as deployment scripts to deploy all the required resources, and includes a sample Unity client and server implementation.
@@ -64,7 +65,7 @@ The architecture diagram introduced here describes all of the components of the 
 # Preliminary Setup for the Backend
 
 1. **Clone the repository**:
-    * `git clone git@github.com:aws-samples/amazon-gamelift-for-persistent-world-games.git`
+    * `git clone git@github.com:aws-solutions-library-samples/guidance-for-persistent-world-game-hosting-on-aws.git`
     * **Windows only**: Make sure you have the repository within a relatively short path as longer paths can introduce issues with some Powershell commands.
 2. **Make sure you have the following tools installed**
     * **Install AWS CDK**
@@ -219,6 +220,12 @@ The Fleet IAM Role is deployed separately, as it needs to be configured for the 
 ### Game Server Refresh
 
 The game server processes will do a refresh every 24 hours by terminating themselves after 24 hours runtime. It's a common practice to refresh your MMO game servers on a daily basis. You can do this in a more sophisticated way through a scheduled maintenance that happens every night for example. World Manager will automatically replace the game server processes that were terminated, and the new one will have access to all the same persisted data (in our case, the stored player location).
+
+# Resource clean up
+
+To clean up all the deployed resources, it's a good idea to first mark all your worlds for termination (`TerminateSession: YES` in DynamoDB WorldsConfiguration table). While it's not a required step, you would do something similar in any automation you build for terminating GameLift fleets, as you want a controlled way to terminate the sessions. Once you have all the worlds terminated, navigate to the `Backend` folder and run the followind command to clean up the CDK stacks:
+
+`cdk destroy --all`
 
 # License
 
