@@ -1,0 +1,7 @@
+{
+    "Location": {"S": "us-east-1"},
+    "WorldID": {"S": "TestWorld1"},
+    "MaxPlayers": {"N": "150"},
+    "WorldMap": {"S": "DesertWorld"},
+    "TerminateSession": {"S": "NO"}
+}
