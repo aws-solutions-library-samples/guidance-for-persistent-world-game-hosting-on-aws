@@ -2,6 +2,7 @@
 
 - [Key Features](#key-features)
 - [Considerations](#considerations)
+  * [Scalability](#scalability)
 - [Contents](#contents)
 - [Architecture Diagram](#architecture-diagram)
 - [Preliminary Setup for the Backend](#preliminary-setup-for-the-backend)
@@ -48,6 +49,21 @@ There are a few key things to consider when validating if Amazon GameLift is a g
 2. **Database access from game servers**: As shown in this example, it's easy to access Amazon DynamoDB through the AWS API by using the Fleet IAM role. The same applies to any database or storage option that you can access directly with the access credentials of the Fleet instance, such as Amazon S3. If you need to have private connectivity to databases within your own VPC, you would need to have the game server call a AWS Lambda function running in your VPC, which can have access to your databases within private VPC subnets.
 3. **Access to database across locations**: The game server processes access a few different DynamoDB tables to persist data and check for the termination flag. This sample solution uses a single location for these tables, which can introduce latency for game servers running in other locations than the home region. DynamoDB allows you to configure [DynamoDB global tables](https://aws.amazon.com/dynamodb/global-tables/), which would enable local access to the database in each region. Global tables are eventually consistent, but as the worlds only write their own data, and read the shared termination configuration, this approach would work.
 3. **Partitioned large-scale MMOs**: If you are building an MMO that requires partitioning of the world to allow thousands of players to play together in the same world, GameLift might not be the best fit for your use case. This is better achieved through custom solutions on Amazon EC2, Amazon ECS or Amazon EKS.
+
+## Scalability
+
+As this is only a sample implementation, you always need to do your own performance and load testing and validate edge and error cases.
+
+The solution guidance has been tested to work with the following configuration and results:
+
+**Configuration:**
+* 150 instances across 3 AWS Regions
+* 2 game servers per instance, total of 300 game servers
+* With 150 players per world, this would provide 45k CCU (typically maps roughly to 450k DAU and 4.5M MAU)
+
+**Results**
+* After initial world deployment, World manager runs in less than 5 seconds with this world count. With the 1 minute runtime, you could potentially manage 10 times this amount of worlds within the update schedule of a Lambda execution starting every minute
+* From no worlds at all (but all game server instances running), the World manager is able to spin up this capacity of 300 worlds across 3 locations in about 4 minutes
 
 # Contents
 
