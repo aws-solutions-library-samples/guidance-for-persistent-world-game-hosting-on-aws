@@ -150,7 +150,8 @@ export class PersistentWorldGameliftStack extends Stack {
     const worldsPlayerDataTable = new dynamodb.Table(this, 'WorldsPlayerData', {
       partitionKey: { name: 'Location_WorldID', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'PlayerCognitoID', type: dynamodb.AttributeType.STRING },
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      replicationRegions: [fleetLocation2, fleetLocation3]
     });
     // Allow GameLift instances to read and write world player data
     worldsPlayerDataTable.grantReadWriteData(importedGameLiftFleetRole);
@@ -169,7 +170,8 @@ export class PersistentWorldGameliftStack extends Stack {
     const worldsTable = new dynamodb.Table(this, 'WorldsConfiguration', {
       partitionKey: { name: 'Location', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'WorldID', type: dynamodb.AttributeType.STRING },
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      replicationRegions: [fleetLocation2, fleetLocation3]
     });
 
     // Allow GameLift instances to read world config to check for termination

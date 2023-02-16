@@ -14,10 +14,6 @@ using Amazon.SecurityToken.Model;
 
 public class Server : MonoBehaviour
 {
-
-    //TODO: Set before creating the build!
-    private Amazon.RegionEndpoint backendRegion = Amazon.RegionEndpoint.USEast1;
-
     // These are picked automatically from the game session info that comes from the backend
     public static string fleetRoleArn = "";
     public static string worldsConfigTableName = "";
@@ -26,6 +22,9 @@ public class Server : MonoBehaviour
     public GameObject playerPrefab;
 
 #if SERVER
+
+    // This Region is the one the game server is running in and will be used to access Global tables locally in the region
+    private Amazon.RegionEndpoint localRegion = Amazon.Util.EC2InstanceMetadata.Region;
 
     private GameLift gameLift;
 
@@ -195,7 +194,7 @@ public class Server : MonoBehaviour
         if (this.fleetRoleCredentials == null || (DateTime.Now - this.lastCredentialsSync).TotalSeconds >= this.credentialsSyncInterval)
         {
             System.Console.WriteLine("Need to refresh Fleet Role Credentials");
-            var stsclient = new Amazon.SecurityToken.AmazonSecurityTokenServiceClient(this.backendRegion);
+            var stsclient = new Amazon.SecurityToken.AmazonSecurityTokenServiceClient(this.localRegion);
 
             // Get and display the information about the identity of the default user.
             var callerIdRequest = new GetCallerIdentityRequest();
@@ -233,8 +232,8 @@ public class Server : MonoBehaviour
         var credentials = await this.GetFleeRoleCredentials();
 
         // 2. GET MY WORLD DATA
-        //AmazonDynamoDBClient client = new AmazonDynamoDBClient(new Amazon.Runtime.SessionAWSCredentials("", "", ""), this.backendRegion); // You can use something like this for local testing
-        AmazonDynamoDBClient client = new AmazonDynamoDBClient(credentials: credentials, this.backendRegion);
+        //AmazonDynamoDBClient client = new AmazonDynamoDBClient(new Amazon.Runtime.SessionAWSCredentials("", "", ""), this.localRegion); // You can use something like this for local testing
+        AmazonDynamoDBClient client = new AmazonDynamoDBClient(credentials: credentials, this.localRegion);
 
         Dictionary<string, AttributeValue> key = new Dictionary<string, AttributeValue>
         {
@@ -261,8 +260,8 @@ public class Server : MonoBehaviour
         var credentials = await this.GetFleeRoleCredentials();
 
         // 2. UPDATE THE PLAYER DATA
-        //AmazonDynamoDBClient client = new AmazonDynamoDBClient(new Amazon.Runtime.SessionAWSCredentials("", "", ""), this.backendRegion); // You can use something like this for local testing
-        AmazonDynamoDBClient client = new AmazonDynamoDBClient(credentials: credentials, this.backendRegion);
+        //AmazonDynamoDBClient client = new AmazonDynamoDBClient(new Amazon.Runtime.SessionAWSCredentials("", "", ""), this.localRegion); // You can use something like this for local testing
+        AmazonDynamoDBClient client = new AmazonDynamoDBClient(credentials: credentials, this.localRegion);
 
         Dictionary<string, AttributeValue> attributes = new Dictionary<string, AttributeValue>
         {
@@ -286,8 +285,8 @@ public class Server : MonoBehaviour
         var credentials = await this.GetFleeRoleCredentials();
 
         // 2. GET THE PLAYER DATA IN THIS WORLD
-        //AmazonDynamoDBClient client = new AmazonDynamoDBClient(new Amazon.Runtime.SessionAWSCredentials("", "", ""), this.backendRegion); // You can use something like this for local testing
-        AmazonDynamoDBClient client = new AmazonDynamoDBClient(credentials: credentials, this.backendRegion);
+        //AmazonDynamoDBClient client = new AmazonDynamoDBClient(new Amazon.Runtime.SessionAWSCredentials("", "", ""), this.localRegion); // You can use something like this for local testing
+        AmazonDynamoDBClient client = new AmazonDynamoDBClient(credentials: credentials, this.localRegion);
 
         Dictionary<string, AttributeValue> key = new Dictionary<string, AttributeValue>
         {
