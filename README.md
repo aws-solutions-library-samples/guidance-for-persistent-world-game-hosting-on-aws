@@ -35,7 +35,7 @@ This Readme includes the architecture overview, as well as deployment instructio
 * Uses Cognito Identity Pools to store user identities and to authenticate the users against the backend
 * Includes configuration to push custom logs and metrics to CloudWatch with CloudWatch Agent
 * Provides Unity example implementations for client and server
-* Leverages the GameLift Fleet Role to access world data persisted in Amazon DynamoDB
+* Leverages the GameLift Fleet Role to access world data persisted in a Global Amazon DynamoDB Table, with local copies of the table in all the fleet locations
 
 The project is a simple "game" where any number of players (based on your world configuration, up to 200) will join game worlds, move around them, and their location will be persisted in Amazon DynamoDB for future sessions as an example of data persistence. The movement inputs are sent to the server which runs the game simulation on a headless Unity process and syncs state back to all players.
 
@@ -47,7 +47,7 @@ There are a few key things to consider when validating if Amazon GameLift is a g
 
 1. **Player sessions**: Amazon GameLift can create up to 200 players sessions within each world. This is enough for a lot of needs, but in some cases you would want to go beyond that. It is completely possible to do, still using GameLift, by replacing the player session management with your own. Instead of creating player sessions for the game session using the GameLift API, you would create these in your own database, such as Amazon DynamoDB.
 2. **Database access from game servers**: As shown in this example, it's easy to access Amazon DynamoDB through the AWS API by using the Fleet IAM role. The same applies to any database or storage option that you can access directly with the access credentials of the Fleet instance, such as Amazon S3. If you need to have private connectivity to databases within your own VPC, you would need to have the game server call a AWS Lambda function running in your VPC, which can have access to your databases within private VPC subnets.
-3. **Access to database across locations**: The game server processes access a few different DynamoDB tables to persist data and check for the termination flag. This sample solution uses a single location for these tables, which can introduce latency for game servers running in other locations than the home region. DynamoDB allows you to configure [DynamoDB global tables](https://aws.amazon.com/dynamodb/global-tables/), which would enable local access to the database in each region. Global tables are eventually consistent, but as the worlds only write their own data, and read the shared termination configuration, this approach would work.
+3. **Access to database across locations**: The game server processes access two different DynamoDB tables to persist data and check for the termination flag. Both of these are configured as Global Tables. [DynamoDB global tables](https://aws.amazon.com/dynamodb/global-tables/) enable local access to the database in each region. Global tables are eventually consistent, but as the worlds only write their own data, and read the shared termination configuration, this approach doesn't introduce write conflicts. For cost optimization, you might choose to use separate tables for all regions you support to reduce replication costs, but using global tables enables things like easy migration of worlds between regions, and local access to another location's data when required.
 3. **Partitioned large-scale MMOs**: If you are building an MMO that requires partitioning of the world to allow thousands of players to play together in the same world, GameLift might not be the best fit for your use case. This is better achieved through custom solutions on Amazon EC2, Amazon ECS or Amazon EKS.
 
 ## Scalability
@@ -219,7 +219,7 @@ The Fleet IAM Role is deployed separately, as it needs to be configured for the 
 
 **Key server code files in the Unity Project**
 
-* `Assets/Scripts/Server/Server.cs`: Processes all the client messages and manages the player session. Also uses the Fleet IAM role to check for world termination requests from DynamoDB, as well as to read and write player position data to/from DynamoDB for persistence.
+* `Assets/Scripts/Server/Server.cs`: Processes all the client messages and manages the player session. Also uses the Fleet IAM role to check for world termination requests from DynamoDB, as well as to read and write player position data to/from DynamoDB for persistence, using the local copy of the global table.
 * `Assets/Scripts/Server/NetworkServer.cs`: Manages the player TCP sockets.
 * `Assets/Scripts/Server/GameLift.cs`: Integrates with GameLift using the GameLift Server SDK.
 * `Assets/Scripts/Server/SimpleStatsDClient.cs`:  A simple sample implementation for sending custom metrics over UDP locally to the CloudWatch Agent process that sends the metrics to CloudWatch Metrics.
