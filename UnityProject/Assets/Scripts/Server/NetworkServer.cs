@@ -14,7 +14,7 @@ public class NetworkServer
 {
 
 #if SERVER
-    private TcpListener listener;
+    private TcpListener listener = null;
     // Clients are stored as a dictionary of the TCPCLient and the ClientID
     private Dictionary<TcpClient, int> clients = new Dictionary<TcpClient, int>();
     private List<TcpClient> clientsToRemove = new List<TcpClient>();
@@ -22,12 +22,21 @@ public class NetworkServer
     private GameLift gamelift = null;
     private Server server = null;
 
+    private float listenerRefreshCounter = 0.0f;
+
     public int GetPlayerCount() { return clients.Count; }
 
     public NetworkServer(GameLift gamelift, Server server)
     {
         this.server = server;
         this.gamelift = gamelift;
+        this.StartListener();
+    }
+
+    private void StartListener()
+    {
+        if(listener != null)
+            listener.Stop();
         //Start the TCP server
         int port = this.gamelift.listeningPort;
         Debug.Log("Starting server on port " + port);
@@ -55,8 +64,24 @@ public class NetworkServer
         return !bClosed;
     }
 
+    private void CheckForListenerRefresh()
+    {
+        // When there are no clients, we refresh the TCPListener every 10 minutes as it has issues when running for hours
+        if(this.clients.Count <= 0)
+        {
+            this.listenerRefreshCounter += Time.deltaTime;
+            if(this.listenerRefreshCounter > 600)
+            {
+                this.StartListener();
+                this.listenerRefreshCounter = 0.0f;
+            }
+        }
+    }
+
     public void Update()
     {
+        this.CheckForListenerRefresh();
+
         // Are there any new connections pending?
         if (listener.Pending())
         {
