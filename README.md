@@ -239,6 +239,30 @@ The Fleet IAM Role is deployed separately, as it needs to be configured for the 
 
 The game server processes will do a refresh every 24 hours by terminating themselves after 24 hours runtime. It's a common practice to refresh your MMO game servers on a daily basis. You can do this in a more sophisticated way through a scheduled maintenance that happens every night for example. World Manager will automatically replace the game server processes that were terminated, and the new one will have access to all the same persisted data (in our case, the stored player location).
 
+# Cost estimations
+
+These rough cost estimations are calculated for **1500 concurrent users**, which typically would mean around **150k monthly users**. The estimations are done with the pricing in US-East-1 region at the time of calculation, and with the feature set of the sample solution. You will see different total costs in your own implementation based on how your backend, database, and compute resources are used. As all of the components are pay as you go, and scale to your demand, you can see a linear scale up and scale down of the costs based on your concurrent users, with some of the services showing reduced tiered costs for higher usage.
+
+**Key data points used:**
+* 2 game session per C5.xlarge instance
+* 150 players per game session
+* 15 minutes sessions --> 1 backend request for worlds listing and joining per player per 15 minutes
+* 4 custom CloudWatch metrics per server, 10MB of logs data ingested per hour per server
+
+## Cost calculation breakdown
+
+| Cost component  | Total usage | Monthly cost breakdown | Monthly cost total |
+| ------------- | ------------- | ------------- |
+| ListWorlds requests  | 6000 API Gateway requests per hour, 6000 Lambda requests at 128MB per hour6, 000 DynamoDB read request per hour (1KB) | $4.38 (API Gateway) + $10.01 (Lambda) + $0.55 (DynamoDB)  | $14.94 |
+| JoinWorld requests  | 6000 API Gateway requests per hour, 6000 Lambda requests at 128MB per hour, 6000 DynamoDB write request per hour (1KB) | $4.38 (API Gateway) + $10.01 (Lambda) + $5.47 (DynamoDB)  | $19.86 |
+| WorldManager invocations  | 60 Eventbridge events per hour, 60 Lambda requests per hour (512MB, 5s), 60 DynamoDB reads per hour (1kB), 600 DynamoDB writes per hour (1kB) | $0 (EventBridge) + $1.83 (Lambda) + $0.56 (DynamoDB)  | $2.39 |
+| GameLift compute and data transfer | 5 C5.xlarge instances, 1500 x 5kB = 7500kB / second  | $847.16 (instances) + $1726.55 (data transfer)  | $2,573.71 |
+| CloudWatch Logs and metrics  | 100MB per hour (rough estimate), 40 custom metrics  | $36.32 (Logs) $12.00 (Metrics) | $48.32|
+| DynamoDB storage | Total of 5501MB storage  | $1.38  | $1.38|
+| Cognito Identity pool | No costs |  | |
+| **Total** | |  | **$2,660.60** |
+
+
 # Resource clean up
 
 To clean up all the deployed resources, it's a good idea to first mark all your worlds for termination (`TerminateSession: YES` in DynamoDB WorldsConfiguration table). While it's not a required step, you would do something similar in any automation you build for terminating GameLift fleets, as you want a controlled way to terminate the sessions. Once you have all the worlds terminated, navigate to the `Backend` folder and run the followind command to clean up the CDK stacks:
