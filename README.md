@@ -252,7 +252,7 @@ These rough cost estimations are calculated for **1500 concurrent users**, which
 ## Cost calculation breakdown
 
 | Cost component  | Total usage | Monthly cost breakdown | Monthly cost total |
-| ------------- | ------------- | ------------- |
+| ------------- | ------------- | ------------- | ------------- |
 | ListWorlds requests  | 6000 API Gateway requests per hour, 6000 Lambda requests at 128MB per hour6, 000 DynamoDB read request per hour (1KB) | $4.38 (API Gateway) + $10.01 (Lambda) + $0.55 (DynamoDB)  | $14.94 |
 | JoinWorld requests  | 6000 API Gateway requests per hour, 6000 Lambda requests at 128MB per hour, 6000 DynamoDB write request per hour (1KB) | $4.38 (API Gateway) + $10.01 (Lambda) + $5.47 (DynamoDB)  | $19.86 |
 | WorldManager invocations  | 60 Eventbridge events per hour, 60 Lambda requests per hour (512MB, 5s), 60 DynamoDB reads per hour (1kB), 600 DynamoDB writes per hour (1kB) | $0 (EventBridge) + $1.83 (Lambda) + $0.56 (DynamoDB)  | $2.39 |
