@@ -124,12 +124,23 @@ public class NetworkServer
                     this.clientsToRemove.Add(tcpClient);
                 }
                 var messages = NetworkProtocol.Receive(tcpClient);
-                foreach (SimpleMessage message in messages)
+
+                // If we receive a null response, it means the client sending incorrenct message format and we'll disconnect them immediately
+                if(messages == null)
                 {
-                    //System.Console.WriteLine("Received message: " + message.message + " type: " + message.messageType);
-                    bool disconnect = HandleMessage(tcpClient, message);
-                    if (disconnect)
-                        this.clientsToRemove.Add(tcpClient);
+                    System.Console.WriteLine("Client sending wrong message format, disconnect immediately.");
+                    this.clientsToRemove.Add(tcpClient);
+                }
+                // Otherwise, iterate through messages received
+                else
+                {
+                    foreach (SimpleMessage message in messages)
+                    {
+                        //System.Console.WriteLine("Received message: " + message.message + " type: " + message.messageType);
+                        bool disconnect = HandleMessage(tcpClient, message);
+                        if (disconnect)
+                            this.clientsToRemove.Add(tcpClient);
+                    }
                 }
             }
             catch (Exception e)

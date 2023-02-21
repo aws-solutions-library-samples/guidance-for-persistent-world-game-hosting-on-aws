@@ -28,7 +28,7 @@ public class NetworkProtocol
                 {
                     System.Console.WriteLine("Error receiving a message: " + e.Message);
                     System.Console.WriteLine("Aborting the rest of the messages");
-                    break;
+                    return null;
                 }
             }
 
@@ -39,7 +39,7 @@ public class NetworkProtocol
             System.Console.WriteLine("Error accessing message stream: " + e.Message);
         }
 
-        return new SimpleMessage[0];
+        return null;
     }
 
     public static void Send(TcpClient client, SimpleMessage message)
