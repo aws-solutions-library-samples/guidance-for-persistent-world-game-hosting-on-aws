@@ -263,12 +263,13 @@ These rough cost estimations are calculated for **1500 concurrent users**, which
 | ListWorlds requests  | 6000 API Gateway requests per hour, 6000 Lambda requests at 128MB per hour, 6000 DynamoDB read request per hour (1KB) | $4.38 (API Gateway) + $10.01 (Lambda) + $0.55 (DynamoDB)  | $14.94 |
 | JoinWorld requests  | 6000 API Gateway requests per hour, 6000 Lambda requests at 128MB per hour, 6000 DynamoDB write request per hour (1KB) | $4.38 (API Gateway) + $10.01 (Lambda) + $5.47 (DynamoDB)  | $19.86 |
 | WorldManager invocations  | 60 Eventbridge events per hour, 60 Lambda requests per hour (512MB, 5s), 60 DynamoDB reads per hour (1kB), 600 DynamoDB writes per hour (1kB) | $0 (EventBridge) + $1.83 (Lambda) + $0.56 (DynamoDB)  | $2.39 |
+| PlayerData database access | 6000 reads per hour, 18000 writes per hour (3x for global table replication) | $0.55 (DynamoDB reads) + $16.43 (DynamoDB reads) | $16.98 |
 | GameLift compute and data transfer | 5 C5.xlarge instances, 1500 x 5kB = 7500kB / second  | $847.16 (instances) + $1726.55 (data transfer)  | $2,573.71 |
 | CloudWatch Logs and metrics  | 100MB per hour (rough estimate), 40 custom metrics  | $36.32 (Logs) $12.00 (Metrics) | $48.32|
 | DynamoDB storage | Total of 5501MB storage  | $1.38  | $1.38|
 | Cognito Identity pool | No costs |  | |
-| **Total Monthly** | |  | **$2,660.60** |
-| **Total Monthly per CCU** | |  | **$1.77** |
+| **Total Monthly** | |  | **$2,694.56** |
+| **Total Monthly per CCU** | |  | **$1.80** |
 
 
 # Resource clean up
