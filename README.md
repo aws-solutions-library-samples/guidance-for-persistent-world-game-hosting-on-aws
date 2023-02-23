@@ -10,6 +10,7 @@
 - [Deployment with AWS CDK](#deployment-with-aws-cdk)
 - [Testing with the sample Unity client](#testing-with-the-sample-unity-client)
   * [Running Clients](#running-clients)
+  * [Running Bot clients](#running-bot-clients)
 - [Implementation Overview](#implementation-overview)
   * [Serverless Backend](#serverless-backend)
     + [World Manager](#world-manager)
@@ -193,6 +194,10 @@ To test the setup end to end, run two clients that will connect to the same game
 * You can run two clients by running one in the Unity Editor and one with the created build. This way the clients will get different Cognito identities
 * List the worlds in the game client UI for any of the locations. After this, select "Join" for the world you want to join
 * If you rejoin a world, you will notice your persisted previous location will be picked up by the game server
+
+## Running Bot clients
+
+You can run headless bot clients across different regions to load test your game on AWS Fargate. The UnityBotClient folder contains all the required configuration to set this up. Please refer to the [Bot Client Readme](UnityBotClient/README.md)) for deployment details.
 
 # Implementation Overview
 
