@@ -32,6 +32,10 @@ public class SimpleMessage
         this.message = message;
     }
 
+    public SimpleMessage()
+    {
+    }
+
     public void SetMoveFloats(float float1, float float2)
     {
         this.float1 = float1; this.float2 = float2;
@@ -41,6 +45,7 @@ public class SimpleMessage
     {
         this.float1 = float1; this.float2 = float2; this.float3 = float3; this.float4 = float4; this.float5 = float5; this.float6 = float6; this.float7 = float7;
     }
+
 
     public MessageType messageType { get; set; }
     public string message { get; set; }
