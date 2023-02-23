@@ -145,7 +145,7 @@ public class ClientServerConfiguration : Editor
 
         // Define the build settings
         BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions();
-        buildPlayerOptions.scenes = new[] { "Assets/Scenes/GameWorld.unity"};
+        buildPlayerOptions.scenes = new[] {  "Assets/Scenes/MainMenu.unity", "Assets/Scenes/Desert.unity", "Assets/Scenes/Forrest.unity" };
         buildPlayerOptions.locationPathName = path + "/BotClient.x86_64";
         buildPlayerOptions.target = BuildTarget.StandaloneLinux64;
         buildPlayerOptions.options = BuildOptions.EnableHeadlessMode;

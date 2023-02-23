@@ -59,7 +59,7 @@ public class Client : MonoBehaviour
     private int botMovementChangeCount = 0;
     private float currentBotMovementX = 0;
     private float currentBotMovementZ = 0;
-    private float botSessionTimer = 60.0f; // seconds value for running a bot session before restarting
+    private float botSessionTimer = 180.0f; // seconds value for running a bot session before restarting
 #endif
 
 #if CLIENT
@@ -189,10 +189,33 @@ public class Client : MonoBehaviour
         // Bots will start automatically
         // TODO: Update to ListWorlds and JoinWorld with random location and world
         System.Console.WriteLine("BOT: Start connecting immediately");
-        this.StartGame();
+        this.BotClientJoinRandomWorld();
 #endif
     }
 
+#if BOTCLIENT
+    void BotClientJoinRandomWorld()
+    {
+        // Select a random region
+        var regionList = new String[] {"us-east-1", "us-west-2", "eu-west-1"};
+        var randomRegion = regionList[UnityEngine.Random.Range(0, regionList.Length)];
+        WorldsData worlds = this.backendApiClient.RequestListWorlds(randomRegion);
+        // Store for joining
+        this.worldsData = worlds;
+
+        //Join a random world in the region if there are some worlds available
+        if(worldsData.Worlds.Length >0)
+        {
+            this.JoinWorld(UnityEngine.Random.Range(0, worldsData.Worlds.Length));
+        }
+        //Otherwise restart the client for a retry
+        else
+        {
+            SceneManager.LoadScene(0);
+        }
+
+    }
+#endif
 
     ///
     /// *** GAME WORLD STATE MANAGEMENT *** ///
