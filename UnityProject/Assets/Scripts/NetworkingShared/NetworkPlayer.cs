@@ -174,7 +174,7 @@ public class NetworkPlayer
 
         // Otherwise interpolate
         Vector3 positionDifference = this.targetPos - this.character.transform.position;
-        Vector3 interpolateMove = 0.5f * positionDifference;
+        Vector3 interpolateMove = 0.25f * positionDifference;
         this.character.transform.SetPositionAndRotation(this.character.transform.position + interpolateMove, this.targetOrientation);
     }
 
