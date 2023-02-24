@@ -48,6 +48,9 @@ public class Server : MonoBehaviour
     private int credentialsSyncInterval = 1800;
     Credentials fleetRoleCredentials = null;
 
+    // State sharing counter (we send state less frequently when there's more players)
+    int stateUpdateCounter = 0;
+
     // Helper function to check if a player exists in the enemy list already
     private bool PlayerExists(int clientId)
     {
@@ -152,6 +155,9 @@ public class Server : MonoBehaviour
     // This is the interval we're running the simulation and processing messages on the server
     void FixedUpdate()
     {
+        // Update stateUpdateCounter. We will update state to players less frequently with more players, as everyone sees everyone in the game (n*n updates)
+        this.stateUpdateCounter = this.stateUpdateCounter - 1;
+
         // Update the Network server to check client status and get messages
         server.Update();
 
@@ -165,15 +171,18 @@ public class Server : MonoBehaviour
             // Move
             player.Move();
 
-            // Send state if changed
-            var positionMessage = player.GetPositionMessage();
-            if (positionMessage != null)
+            // Send state if changed and if we are planning to send state this frame
+            if(stateUpdateCounter <= 0)
             {
-                positionMessage.clientId = player.GetPlayerId();
-                this.server.TransmitMessage(positionMessage, player.GetPlayerId());
-                //Send to the player him/herself
-                positionMessage.messageType = MessageType.PositionOwn;
-                this.server.SendMessage(player.GetPlayerId(), positionMessage);
+                var positionMessage = player.GetPositionMessage();
+                if (positionMessage != null)
+                {
+                    positionMessage.clientId = player.GetPlayerId();
+                    this.server.TransmitMessage(positionMessage, player.GetPlayerId());
+                    //Send to the player him/herself
+                    positionMessage.messageType = MessageType.PositionOwn;
+                    this.server.SendMessage(player.GetPlayerId(), positionMessage);
+                }
             }
         }
 
@@ -185,6 +194,24 @@ public class Server : MonoBehaviour
             Task.Run(CheckForTerminationRequest);
             //System.Console.WriteLine("Check request sent.");
             this.timeSinceLastTerminationCheck = 0.0f;
+        }
+
+        if(this.stateUpdateCounter <= 0)
+        {
+            if(this.players.Count > 130)
+                this.stateUpdateCounter = 7; // update every 7 frames
+            else if(this.players.Count > 110)
+                this.stateUpdateCounter = 6;
+            else if(this.players.Count > 90)
+                this.stateUpdateCounter = 5;
+            else if(this.players.Count > 70)
+                this.stateUpdateCounter = 4;
+            else if(this.players.Count > 50)
+                this.stateUpdateCounter = 3;
+            else if(this.players.Count > 30)
+                this.stateUpdateCounter = 2;
+            else
+                this.stateUpdateCounter = 1; // update every frame
         }
     }
 
