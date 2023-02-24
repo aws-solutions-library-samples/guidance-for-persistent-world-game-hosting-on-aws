@@ -57,11 +57,11 @@ public class NetworkProtocol
         return null;
     }
 
-    public static void Send(TcpClient client, SimpleMessage message)
+    public static bool Send(TcpClient client, SimpleMessage message)
     {
         try
         {
-            if (client == null) return;
+            if (client == null) return false;
             NetworkStream stream = client.GetStream();
             using (var writer = new BinaryWriter(stream, Encoding.UTF8, true))
             {
@@ -76,11 +76,16 @@ public class NetworkProtocol
                 writer.Write(message.float5);
                 writer.Write(message.float6);
                 writer.Write(message.float7);
+
+                return true;
             }
         }
         catch (Exception e)
         {
             Debug.Log("Error sending data: " + e.Message);
+            return false;
         }
+
+        return false;
     }
 }

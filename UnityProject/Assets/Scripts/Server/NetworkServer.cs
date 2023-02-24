@@ -195,7 +195,12 @@ public class NetworkServer
 
             try
             {
-                NetworkProtocol.Send(client.Key, msg);
+                bool sendSucceeded = NetworkProtocol.Send(client.Key, msg);
+                if(!sendSucceeded)
+                {
+                    System.Console.WriteLine("Couldn't send to client, terminate session");
+                    this.clientsToRemove.Add(client.Key);
+                }
             }
             catch (Exception e)
             {
@@ -218,7 +223,12 @@ public class NetworkServer
 
             try
             {
-                NetworkProtocol.Send(client.Key, msg);
+                bool sendSucceeded = NetworkProtocol.Send(client.Key, msg);
+                if(!sendSucceeded)
+                {
+                    System.Console.WriteLine("Couldn't send to client, terminate session");
+                    this.clientsToRemove.Add(client.Key);
+                }
             }
             catch (Exception e)
             {
@@ -256,7 +266,13 @@ public class NetworkServer
     {
         try
         {
-            NetworkProtocol.Send(client, msg);
+            bool sendSucceeded = NetworkProtocol.Send(client, msg);
+
+            if(!sendSucceeded)
+            {
+                System.Console.WriteLine("Couldn't send to client, terminate session");
+                this.clientsToRemove.Add(client);
+            }
         }
         catch (Exception e)
         {
