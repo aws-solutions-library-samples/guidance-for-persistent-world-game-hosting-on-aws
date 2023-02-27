@@ -126,6 +126,13 @@ public class NetworkPlayer
     {
         var controller = this.character.GetComponent<SimpleController>();
         controller.Move();
+
+        // Check if we've dropped off the world from the edge and jump back in
+        if(this.character.transform.position.y < -5.0f)
+        {
+            Debug.Log("Player dropped off the world edge, bringing back.");
+            this.SetPosition(UnityEngine.Random.Range(50,60), 8, UnityEngine.Random.Range(30, 40));
+        }
     }
 
     // Set's the input on server (received from clients)
