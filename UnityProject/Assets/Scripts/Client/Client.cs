@@ -399,6 +399,13 @@ public class Client : MonoBehaviour
             this.currentBotMovementX = UnityEngine.Random.Range(-1.0f, 1.0f);
             this.currentBotMovementZ = UnityEngine.Random.Range(-1.0f, 1.0f);
             this.botMovementChangeCount = 30;
+
+            // Sometimes just stop
+            if(UnityEngine.Random.Range(0,2) == 1)
+            {
+                this.currentBotMovementX = 0;
+                this.currentBotMovementZ = 0;
+            }
         }
         this.botMovementChangeCount -= 1;
 
