@@ -94,6 +94,10 @@ def deploy_world(world_config):
         print('Cancelling deployment of this world...')
         return
 
+    dynamic_world = "NO"
+    if "DynamicWorld" in world_config.keys():
+        dynamic_world = world_config["DynamicWorld"]
+
     # Update on DynamoDB
     try:
         table = dynamodb.Table(os.environ['WORLD_SESSIONS_TABLE'])
@@ -104,7 +108,8 @@ def deploy_world(world_config):
                 'Status': "PROVISIONING",
                 'CreationTime': int(round(datetime.utcnow().timestamp())),
                 'MaxPlayers': world_config["MaxPlayers"],
-                'WorldMap': world_config["WorldMap"]
+                'WorldMap': world_config["WorldMap"],
+                'DynamicWorld': dynamic_world
             }
         )
     except botocore.exceptions.ClientError as error:
@@ -188,6 +193,40 @@ def update_world_session_info():
         except botocore.exceptions.ClientError as error:
             raise Exception('Error updating world session to DynamoDB: {}'.format(error))
 
+""" Checks the need for creating new dynamic worlds """
+def handle_dynamic_world_scaling(world_config, world_sessions):
+
+    available_player_slots = 0 # We calculate all free slots across the instances of the dynamic world
+
+    print("Checking if we need to deploy more dynamic instances for world: ", world_config["WorldID"])
+
+    # Iterate through all the world sessions to count how many free slots we have total for this dynamic world
+    for world_session in world_sessions:
+
+        # Only check worlds that have the correct name. NOTE: We're using startswith here, don't use one WorldID:s name as a substring for another one!
+        if world_session["WorldID"].startswith(world_config["WorldID"]):
+            # Add free slots from worlds that are active
+            if world_session["Location"] == world_config["Location"] and world_session["Status"] == "ACTIVE":
+                print("Found and active instance of the dynamic world, add to available player slots")
+                available_player_slots += world_config["MaxPlayers"] - world_session["CurrentPlayerSessionCount"]
+                print("Current total of free slots: ", available_player_slots)
+
+            # Also add free slots from worlds that are still provisioning
+            world_session_creation_time = datetime.fromtimestamp(int(world_session["CreationTime"]))
+            time_since_creation_seconds = (datetime.utcnow() - world_session_creation_time).total_seconds()
+            if time_since_creation_seconds < 300 and world_session["Status"] == "PROVISIONING":
+                print("Found aa provisioning world instance of the dynamic world that hasn't timed out yet. Add free slots of this too.")
+                available_player_slots += world_config["MaxPlayers"] - world_session["CurrentPlayerSessionCount"]
+                print("Current total of free slots: ", available_player_slots)
+
+    # If we have less than the amount of sessions in a single instance of the world, we'll spin up a new one
+    # NOTE: You would modify this logic to your scaling needs
+    if available_player_slots < world_config["MaxPlayers"]:
+        print("We have less than one full world of free player slots, provision another instance of the dynamic world")
+        # Select a dynamic name for this instance of the world by adding the date
+        world_config["WorldID"] = world_config["WorldID"] + datetime.utcnow().strftime('_%Y%m%d_%H%M%S')
+        print("Creating world with ID: ", world_config["WorldID"])
+        deploy_world(world_config)
 
 """ Goes through all the world configs and running sessions and provisions missing worlds """
 def check_worlds_status_and_deploy():
@@ -202,11 +241,17 @@ def check_worlds_status_and_deploy():
 
     # Check for worlds that are not provisioned and not reporting healthly
     for world_config in worlds_configured:
+
+        # Manage dynamic worlds separately, as we add more of them as needed
+        if "DynamicWorld" in world_config.keys() and world_config["DynamicWorld"] == "YES":
+            handle_dynamic_world_scaling(world_config, world_sessions)
+            continue;
+
         world_deployed = False
 
         # Don't even check worlds that are defined to be terminated
         if "TerminateSession" in world_config.keys() and world_config["TerminateSession"] == "YES":
-            print("Ignore world " + world_config["WorldID"] + " as it's scheduled for termination")
+            #print("Ignore world " + world_config["WorldID"] + " as it's scheduled for termination")
             continue;
 
         # Check if the world session is provisioned within the past 5 minutes or reporting healthy

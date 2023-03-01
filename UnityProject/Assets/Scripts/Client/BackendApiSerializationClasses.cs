@@ -15,6 +15,7 @@ public class WorldsData
         public int CurrentPlayerSessionCount;
         public string WorldMap;
         public string WorldID;
+        public string DynamicWorld;
     }
 
     public WorldData[] Worlds;

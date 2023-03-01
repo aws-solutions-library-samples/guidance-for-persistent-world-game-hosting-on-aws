@@ -35,11 +35,25 @@ public class UIManager : MonoBehaviour
     internal GameObject AddWorldItemToList(WorldsData.WorldData world)
     {
         var item = Instantiate(this.worldInfoPrefab);
-        item.GetComponentInChildren<Text>().text = world.WorldID + " Players: " + world.CurrentPlayerSessionCount + " / " + world.MaxPlayers + " Map: " + world.WorldMap;
-        // parent the item to the content container
-        item.transform.SetParent(this.worldInfoContentContainer);
-        // reset the scale
-        transform.transform.localScale = Vector2.one;
+
+        if(world.DynamicWorld == "YES")
+        {
+            // Only show the name of the dynamic world without the extension by splitting with _
+            item.GetComponentInChildren<Text>().text = "DYNAMIC: " + world.WorldID.Split('_')[0] + " Players: " + world.CurrentPlayerSessionCount + " / " + world.MaxPlayers + " Map: " + world.WorldMap;
+            item.GetComponentInChildren<Text>().color = Color.yellow;
+            // parent the item to the content container
+            item.transform.SetParent(this.worldInfoContentContainer);
+            // reset the scale
+            transform.transform.localScale = Vector2.one;
+        }
+        else
+        {
+            item.GetComponentInChildren<Text>().text = world.WorldID + " Players: " + world.CurrentPlayerSessionCount + " / " + world.MaxPlayers + " Map: " + world.WorldMap;
+            // parent the item to the content container
+            item.transform.SetParent(this.worldInfoContentContainer);
+            // reset the scale
+            transform.transform.localScale = Vector2.one;
+        }
 
         return item;
     }
