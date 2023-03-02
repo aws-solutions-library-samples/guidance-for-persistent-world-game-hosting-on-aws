@@ -11,6 +11,7 @@
 - [Testing with the sample Unity client](#testing-with-the-sample-unity-client)
   * [Running Clients](#running-clients)
   * [Running Bot clients](#running-bot-clients)
+- [Dynamic Worlds](#dynamic-worlds)
 - [Implementation Overview](#implementation-overview)
   * [Serverless Backend](#serverless-backend)
     + [World Manager](#world-manager)
@@ -168,6 +169,8 @@ Before starting, navigate to the repository root in your terminal and open the p
         3. **Name**: *MaxPlayers* **Type**: *Number* **Value**: Max players for the world (1-200)
         4. **Name**: *WorldMap* **Type**: *String* **Value**: Map to be loaded. The Unity sample supports values "Desert" and "Forrest" (without the quotes)
         5. **Name**: *TerminateSession* **Type**: *String* **Value**: Defines if the instantiation of this world should be terminated. Any other value than "YES" (without quotes) will keep the session running. The game servers actively poll for this information.
+    * Optional attributes
+        6. **Name**: *DynamicWorld* **Type**: *String* **Value**: Defines if the world is dynamic, ie. multiple instances of the world are created when previous ones get full. Any other value than "YES" (without quotes) will not count as a dynamic world. See [Dynamic Worlds](#dynamic-worlds) for details.
     * Optionally you can use the AWS CLI to create worlds programmatically. There is a sample item configuration in `sample_world_item.json` which you can modify, and create worlds by running `aws dynamodb put-item --table-name PersistentWorldGameliftStack-WorldsConfiguration<STACKIDENTIFIER> --item file://sample_world_item.json`. Make sure to replace the table with your correct table first
     * TIP: You can also use the AWS SDK to create and modify worlds with any custom tool you build, or even have a dynamic way of creating them if you're game supports player-created worlds for example.
     * Example configuration: ![WorldConfigExample](WorldConfigExample.png "World Configuration example")
@@ -198,6 +201,20 @@ To test the setup end to end, run two clients that will connect to the same game
 ## Running Bot clients
 
 You can run headless bot clients across different regions to load test your game on AWS Fargate. The UnityBotClient folder contains all the required configuration to set this up. Please refer to the [Bot Client Readme](UnityBotClient/README.md)) for deployment details.
+
+# Dynamic Worlds
+
+Many games require dynamic worlds, which scale based on player demand. You could have for example a "Lobby" world in all of the locations of the multi-region fleet, and new instances of the lobby are required as previous ones are filled. You also need to be able to scale down the lobbies where there are no players left.
+
+For this use case, it's not efficient to manage separate lobby worlds as individual configuration. You can instead use the dynamic world configuration by defining the following _string_ value in a world item in the _WorldConfigurations_ table: **key:** _DynamicWorld_ **value:** _YES_
+
+Key things to understand on the dynamic world implementation:
+
+* The World Manager will create a new instance of the dynamic world if there's less than one full world of player slots left in the existing ones. You can easily modify the World Manager to change this configuration.
+* Dynamic worlds are indicated with a different color on the client side. They will all have a timestamp-based dynamic name, but the client will show the same configured world name for all instances of the dynamic world.
+* Dynamic worlds current instance count is stored to the WorldConfigurations table by the World Manager. The game servers hosting dynamic worlds will poll for this info, and they will terminate themselves if A) There are more than 1 instance of the world running and B) They haven't had any players for 5 minutes. Again, you can modify this behaviour to your liking.
+* You can extend the functionality to join a random instance of the dynamic world, or maybe a specific one where a player's friend is in. This can be done by modifying the JoinWorlds backend functionality, adding new backend Lambda functions, or changing how the client lists and joins the dynamic worlds. There's a lot of options for making it work for your game!
+* Currently, all the instances of a dynamic world will have their own player location data, which makes sense for situations where the instances of dynamic worlds are individually persistent. You can easily modify this so that you use the same data for all instances, so that players leaving or joining any of the dynamic worlds will continue where they left of. Just store the location on the server based on the world name prefix instead of the full world name.
 
 # Implementation Overview
 
