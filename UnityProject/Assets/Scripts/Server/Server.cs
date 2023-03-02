@@ -18,6 +18,7 @@ public class Server : MonoBehaviour
     public static string fleetRoleArn = "";
     public static string worldsConfigTableName = "";
     public static string worldPlayerDataTable = "";
+    public static string dynamicWorld = "";
 
     public GameObject playerPrefab;
 
@@ -50,6 +51,9 @@ public class Server : MonoBehaviour
 
     // State sharing counter (we send state less frequently when there's more players)
     int stateUpdateCounter = 0;
+
+    // Time since last player was in the game
+    float timeSinceLastPlayer = 0.0f;
 
     // Helper function to check if a player exists in the enemy list already
     private bool PlayerExists(int clientId)
@@ -213,6 +217,15 @@ public class Server : MonoBehaviour
             else
                 this.stateUpdateCounter = 1; // update every frame
         }
+
+        if(this.players.Count <= 0)
+        {
+            this.timeSinceLastPlayer += Time.deltaTime;
+        }
+        else
+        {
+            this.timeSinceLastPlayer = 0.0f;
+        }
     }
 
     private async Task<Credentials> GetFleeRoleCredentials()
@@ -255,6 +268,14 @@ public class Server : MonoBehaviour
             return;
         }
 
+        string worldID = this.gameLift.gameSession.Name;
+        // If this is a dynamic world, we need to query the substring of the worldID without the suffix of this specific instance
+        if(Server.dynamicWorld == "YES")
+        {
+            worldID = worldID.Split('_')[0];
+            System.Console.WriteLine("Using dynamic world prefix for query: " + worldID);
+        }
+
         // 1. GET CREDENTIALS
         var credentials = await this.GetFleeRoleCredentials();
 
@@ -265,7 +286,7 @@ public class Server : MonoBehaviour
         Dictionary<string, AttributeValue> key = new Dictionary<string, AttributeValue>
         {
             { "Location", new AttributeValue { S =  Amazon.Util.EC2InstanceMetadata.Region.SystemName } },
-            { "WorldID", new AttributeValue { S = this.gameLift.gameSession.Name } }
+            { "WorldID", new AttributeValue { S = worldID } }
         };
 
         var response = await client.GetItemAsync(new Amazon.DynamoDBv2.Model.GetItemRequest(Server.worldsConfigTableName, key));
@@ -275,6 +296,18 @@ public class Server : MonoBehaviour
         {
             System.Console.WriteLine("Session termination requested, end the session. ");
             this.gameLift.TerminateGameSession();
+        }
+
+        // 4. FOR DYNAMIC WORLDS: CHECK IF THE WORLD COUNT IS HIGHER THAN ONE (We're not the only world running), AND TERMINATE IF WE HAVE HAD NO PLAYERS FOR 5 MINUTES
+        if(Server.dynamicWorld == "YES" && response.Item.ContainsKey("CurrentDynamicWorldCount") && Int32.Parse(response.Item["CurrentDynamicWorldCount"].N) > 1)
+        {
+            System.Console.WriteLine("Got dynamic world count higher than 1 for this world, check if we've been empty for 5 minutes and terminate");
+            System.Console.WriteLine("Player count: " + this.players.Count + " Time since last player: " + this.timeSinceLastPlayer);
+            if(this.players.Count <= 0 && this.timeSinceLastPlayer >= 300.0f)
+            {
+                System.Console.WriteLine("Terminate this world, we've been empty for 5 minutes and there are other instances running");
+                this.gameLift.TerminateGameSession();
+            }
         }
     }
 

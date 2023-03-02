@@ -31,6 +31,7 @@ public class NetworkClient
 		var messages = NetworkProtocol.Receive(client);
 		if(messages != null)
 		{
+			//Debug.Log("Received messages");
 			foreach (SimpleMessage msg in messages)
 			{
 				HandleMessage(msg);

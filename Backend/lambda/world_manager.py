@@ -62,6 +62,10 @@ def is_world_deployed(world_session, world_config):
 """ Deploys a world from world config """
 def deploy_world(world_config):
 
+    dynamic_world = "NO"
+    if "DynamicWorld" in world_config.keys():
+        dynamic_world = world_config["DynamicWorld"]
+
     # Provision the session on GameLift
     try:
         response = gamelift.create_game_session(
@@ -85,6 +89,10 @@ def deploy_world(world_config):
                 {
                     'Key': 'WorldPlayerDataTable',
                     'Value': os.environ['WORLD_PLAYER_DATA_TABLE']
+                },
+                {
+                    'Key': 'DynamicWorld',
+                    'Value': dynamic_world
                 }
             ],
             Location=world_config["Location"]
@@ -93,10 +101,6 @@ def deploy_world(world_config):
         print('Error creating world game session: {}'.format(error))
         print('Cancelling deployment of this world...')
         return
-
-    dynamic_world = "NO"
-    if "DynamicWorld" in world_config.keys():
-        dynamic_world = world_config["DynamicWorld"]
 
     # Update on DynamoDB
     try:
@@ -193,6 +197,40 @@ def update_world_session_info():
         except botocore.exceptions.ClientError as error:
             raise Exception('Error updating world session to DynamoDB: {}'.format(error))
 
+""" Updates the current count of dynamic worlds to the worlds config table """
+def update_dynamic_worlds_counts(world_sessions):
+
+    dynamic_worlds = {}
+
+    for world_session in world_sessions:
+        if "DynamicWorld" in world_session.keys() and world_session["DynamicWorld"] == "YES":
+            # +1 to the dynamic world. Remove the instance specific suffix with split
+            worldID = world_session["WorldID"].split("_")[0]
+            # Do a combined key of the Location and World
+            location_world_key = world_session["Location"]+"_"+worldID
+            if location_world_key in dynamic_worlds.keys():
+                dynamic_worlds[location_world_key] += 1
+            else :  
+                dynamic_worlds[location_world_key] = 1
+
+    for dynamic_world in dynamic_worlds:
+
+        print("Adding dynamic world count for world: " + dynamic_world)
+        attributeUpdates = {
+                'CurrentDynamicWorldCount': { 'Value' : dynamic_worlds[dynamic_world], 'Action' : 'PUT'},
+            }
+        try:
+            table = dynamodb.Table(os.environ['WORLD_CONFIGURATIONS_TABLE'])
+            response = table.update_item(
+                Key={
+                    'Location': dynamic_world.split("_")[0],
+                    'WorldID': dynamic_world.split("_")[1]
+                },
+                AttributeUpdates=attributeUpdates
+            )
+        except botocore.exceptions.ClientError as error:
+            raise Exception('Error updating world config to DynamoDB: {}'.format(error))
+
 """ Checks the need for creating new dynamic worlds """
 def handle_dynamic_world_scaling(world_config, world_sessions):
 
@@ -203,10 +241,13 @@ def handle_dynamic_world_scaling(world_config, world_sessions):
     # Iterate through all the world sessions to count how many free slots we have total for this dynamic world
     for world_session in world_sessions:
 
+        last_updated_time = datetime.fromtimestamp(int(world_session["LastUpdatedTime"]))
+        time_since_last_update = (datetime.utcnow() - last_updated_time).total_seconds()
+
         # Only check worlds that have the correct name. NOTE: We're using startswith here, don't use one WorldID:s name as a substring for another one!
         if world_session["WorldID"].startswith(world_config["WorldID"]):
             # Add free slots from worlds that are active
-            if world_session["Location"] == world_config["Location"] and world_session["Status"] == "ACTIVE":
+            if world_session["Location"] == world_config["Location"] and world_session["Status"] == "ACTIVE" and time_since_last_update < 300:
                 print("Found and active instance of the dynamic world, add to available player slots")
                 available_player_slots += world_config["MaxPlayers"] - world_session["CurrentPlayerSessionCount"]
                 print("Current total of free slots: ", available_player_slots)
@@ -228,8 +269,30 @@ def handle_dynamic_world_scaling(world_config, world_sessions):
         print("Creating world with ID: ", world_config["WorldID"])
         deploy_world(world_config)
 
-""" Goes through all the world configs and running sessions and provisions missing worlds """
-def check_worlds_status_and_deploy():
+""" Deletes all world sessions that have expired from the DynamoDB table """
+def delete_expired_world_sessions(world_sessions):
+
+    for world_session in world_sessions:
+
+        last_updated_time = datetime.fromtimestamp(int(world_session["LastUpdatedTime"]))
+        time_since_last_update = (datetime.utcnow() - last_updated_time).total_seconds()
+        # If the game session hasn't been found in the game sessions list for five minutes, delete the entry
+        if time_since_last_update > 300:
+            print("World " + world_session["WorldID"] + " has expired. Delete from DynamoDB")
+            try:
+                table = dynamodb.Table(os.environ['WORLD_SESSIONS_TABLE'])
+                response = table.delete_item(
+                    Key={
+                        'Location': world_session["Location"],
+                        'WorldID': world_session["WorldID"]
+                    }
+                )
+            except botocore.exceptions.ClientError as error:
+                raise Exception('Error deleting world session from DynamoDB: {}'.format(error))
+
+
+""" Goes through all the world configs and running sessions and provisions missing worlds, removes terminated worlds, and updates dynamic world counts """
+def check_and_update_worlds_status_and_deploy():
     
     # Scan through all the worlds we want to have running globally
     worlds_configured = scan_worlds(os.environ['WORLD_CONFIGURATIONS_TABLE'])
@@ -265,9 +328,15 @@ def check_worlds_status_and_deploy():
             print("World " + world_config["WorldID"] + " not deployed yet. Provision on GameLift Fleet")
             deploy_world(world_config)
 
+    # Update the world counts for dynamic worlds to Worlds config table
+    update_dynamic_worlds_counts(world_sessions)
+
+    # Delete all world sessions that are not responding anymore (last update > 300s)
+    delete_expired_world_sessions(world_sessions)
+
 """ The main entry point of the Lambda function """
 def handler(event, context):
 
     update_world_session_info()
-    check_worlds_status_and_deploy()
+    check_and_update_worlds_status_and_deploy()
 

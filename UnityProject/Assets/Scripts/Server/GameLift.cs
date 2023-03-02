@@ -183,6 +183,8 @@ public class GameLift : MonoBehaviour
                     Server.worldsConfigTableName = gameProperty.Value;
                 else if(gameProperty.Key == "WorldPlayerDataTable")
                     Server.worldPlayerDataTable = gameProperty.Value;
+                else if(gameProperty.Key == "DynamicWorld")
+                    Server.dynamicWorld = gameProperty.Value;
             }
 
             System.Console.WriteLine("Got Fleet Role Arn: " + Server.fleetRoleArn + " and Table: " + Server.worldsConfigTableName);

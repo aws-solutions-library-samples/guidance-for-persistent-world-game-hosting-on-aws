@@ -209,7 +209,7 @@ export class PersistentWorldGameliftStack extends Stack {
     // Add basic execution
     worldManagerFunction.addToRolePolicy(lambdaBasicPolicy);
     // Add required access to DynamoDB tables
-    worldsTable.grantReadData(worldManagerFunction);
+    worldsTable.grantReadWriteData(worldManagerFunction);
     worldSessions.grantReadWriteData(worldManagerFunction);
     // Add access to GameLift APIs
     worldManagerFunction.addToRolePolicy(new iam.PolicyStatement({
