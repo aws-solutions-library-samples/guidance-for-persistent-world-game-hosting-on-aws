@@ -39,6 +39,7 @@ This Readme includes the architecture overview, as well as deployment instructio
 * Includes configuration to push custom logs and metrics to CloudWatch with CloudWatch Agent
 * Provides Unity example implementations for client and server
 * Leverages the GameLift Fleet Role to access world data persisted in a Global Amazon DynamoDB Table, with local copies of the table in all the fleet locations
+* Supports both static worlds (single instance) and dynamic worlds (multiple instances based on player demand)
 
 The project is a simple "game" where any number of players (based on your world configuration, up to 200) will join game worlds, move around them, and their location will be persisted in Amazon DynamoDB for future sessions as an example of data persistence. The movement inputs are sent to the server which runs the game simulation on a headless Unity process and syncs state back to all players.
 
