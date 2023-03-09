@@ -19,7 +19,6 @@
   * [GameLift Resources](#gamelift-resources)
   * [Game Server and Game Client](#game-server-and-game-client)
     + [Game Server Refresh](#game-server-refresh)
-  * [Local Testing](#local-testing)
 - [Cost estimations](#cost-estimations)
 - [Resource clean up](#resource-clean-up)
 - [License](#license)
