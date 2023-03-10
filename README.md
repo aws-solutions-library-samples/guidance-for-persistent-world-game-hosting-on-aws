@@ -93,6 +93,8 @@ The architecture diagram introduced here describes all of the components of the 
         * Run `npm install -g typescript` to install Typescript, which is used by the CDK application. See [Working with CDK In Typescript for more details](https://docs.aws.amazon.com/cdk/v2/guide/work-with-cdk-typescript.html).
 3. **Select deployment Region**
     * The default AWS Home Region for the solution is _us-east-1_. You can choose any supported GameLift Home Region to deploy the solution. This region will host the backend and act as the home region of the GameLift fleet, but you can configure worlds to be deployed to any supported location within the multi-region Fleet
+4. **Make sure you have enough available instances for the GameLift fleet**
+    * The solution expects you have 1 free instance of type C5.xlarge for all the 3 locations of the multi-region fleet in Amazon GameLift. See **Instance and Service Quotas** in the Amazon GameLift console to make sure you're not under limits. You can request a limit increase through the AWS Support, or select another instance type for your deployment by modifying the CDK template.
 
 # Preliminary Setup for Unity
 
